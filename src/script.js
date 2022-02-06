@@ -1,3 +1,7 @@
+import './style.css'
+import './style.css'
+import * as THREE from 'three'
+
 // Scene
 const scene = new THREE.Scene()
 
@@ -21,8 +25,8 @@ console.error(`camera.position.x :  ${camera.position.x},
             camera.position.y :  ${camera.position.y},
             camera.position.z :  ${camera.position.z}`)
 camera.position.z = 3
-camera.position.x= 2
-camera.position.y = 2
+//camera.position.x= 2
+//camera.position.y = 2
 
 console.error(`camera.position.x :  ${camera.position.x},
             camera.position.y :  ${camera.position.y},
