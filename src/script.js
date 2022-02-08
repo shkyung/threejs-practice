@@ -1,17 +1,22 @@
 import './style.css'
 import * as THREE from 'three'
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
+const cursor = {
+    x: 0,
+    y: 0
+}
+window.addEventListener("mousemove", (e) => {
+    //make x y 0~1  e.clientX / sizes.width
+    cursor.x = e.clientX / sizes.width - 0.5 // -0.5~0.5
+    cursor.y = -(e.clientY / sizes.height - 0.5)
+})
+
+/**
+ * Base
+ */
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
-
-// Scene
-const scene = new THREE.Scene()
-
-// Object
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-const material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
-const mesh = new THREE.Mesh(geometry, material)
-scene.add(mesh)
 
 // Sizes
 const sizes = {
@@ -19,40 +24,57 @@ const sizes = {
     height: 600
 }
 
-// Camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-camera.position.z = 3
-scene.add(camera)
+// Scene
+const scene = new THREE.Scene()
 
+// Object
+const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1, 5, 5, 5),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+)
+scene.add(mesh)
+
+// Camera
+const camera = new THREE.PerspectiveCamera(75, sizes.width/ sizes.height)
+//camera.position.x = 2
+//camera.position.y = 2
+camera.position.z = 2
+camera.lookAt(mesh.position)
+scene.add(camera)
+const controls = new OrbitControls(camera,canvas)
+// controls.target.y =1
+// controls.update()
+controls.enableDamping = true
 // Renderer
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
 renderer.setSize(sizes.width, sizes.height)
-//renderer.render(scene, camera)
 
-let clock = new THREE.Clock()
+// Animate
+const clock = new THREE.Clock()
 
-//Animations
-const tick = () => {
-    // Clock
+const tick = () =>
+{
     const elapsedTime = clock.getElapsedTime()
-    //console.error(elapsedTime)
-
     // Update objects
-    //mesh.position.x += 0.01
-    //mesh.rotation.y = elapsedTime * Math.PI * 2
+    //mesh.rotation.y = elapsedTime;
 
-    //mesh.position.x = Math.cos(elapsedTime)
-    //mesh.position.y = Math.sin(elapsedTime)
+    // Update camera
+    // camera.position.x = cursor.x * 3
+    // camera.position.y = cursor.y * 3
+    // camera.position.x = Math.sin(cursor.x * Math.PI * 2) * 2
+    // camera.position.z = Math.cos(cursor.x * Math.PI * 2) * 2
+    // camera.position.y = cursor.y * 3
+    // camera.lookAt(mesh.position)
 
-    camera.position.x = Math.cos(elapsedTime)
-    camera.position.y = Math.sin(elapsedTime)
+    // control dampling 사용한다면 잊지말자.
+    controls.update()
     // Render
-    renderer.render(scene,camera)
+    renderer.render(scene, camera)
 
-    requestAnimationFrame(tick)
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
 }
 
 tick()
-
