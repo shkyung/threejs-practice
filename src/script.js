@@ -1,16 +1,6 @@
 import './style.css'
 import * as THREE from 'three'
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
-
-const cursor = {
-    x: 0,
-    y: 0
-}
-window.addEventListener("mousemove", (e) => {
-    //make x y 0~1  e.clientX / sizes.width
-    cursor.x = e.clientX / sizes.width - 0.5 // -0.5~0.5
-    cursor.y = -(e.clientY / sizes.height - 0.5)
-})
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 /**
  * Base
@@ -18,58 +8,82 @@ window.addEventListener("mousemove", (e) => {
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
-// Sizes
-const sizes = {
-    width: 800,
-    height: 600
-}
-
 // Scene
 const scene = new THREE.Scene()
 
-// Object
-const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1, 5, 5, 5),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
-)
+/**
+ * Object
+ */
+const geometry = new THREE.BoxGeometry(1, 1, 1)
+const material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
+const mesh = new THREE.Mesh(geometry, material)
 scene.add(mesh)
 
-// Camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width/ sizes.height)
-//camera.position.x = 2
-//camera.position.y = 2
-camera.position.z = 2
-camera.lookAt(mesh.position)
+/**
+ * Sizes
+ */
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
+
+window.addEventListener("resize", () => {
+    console.error("resize!!")
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
+    //update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+
+    //update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    //다른 스크린으로 옮겨가는 경우
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+})
+
+window.addEventListener('dblclick', () => {
+    console.error("dblclick")
+    if (!document.fullscreenElement) {
+        canvas.requestFullscreen()
+    } else {
+       document.exitFullscreen()
+    }
+})
+
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
+camera.position.z = 3
 scene.add(camera)
-const controls = new OrbitControls(camera,canvas)
-// controls.target.y =1
-// controls.update()
+
+// Controls
+const controls = new OrbitControls(camera, canvas)
+//controls.enabled=false
 controls.enableDamping = true
-// Renderer
+
+/**
+ * Renderer
+ */
 const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
 renderer.setSize(sizes.width, sizes.height)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
 
-// Animate
+/**
+ * Animate
+ */
 const clock = new THREE.Clock()
 
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
-    // Update objects
-    //mesh.rotation.y = elapsedTime;
 
-    // Update camera
-    // camera.position.x = cursor.x * 3
-    // camera.position.y = cursor.y * 3
-    // camera.position.x = Math.sin(cursor.x * Math.PI * 2) * 2
-    // camera.position.z = Math.cos(cursor.x * Math.PI * 2) * 2
-    // camera.position.y = cursor.y * 3
-    // camera.lookAt(mesh.position)
-
-    // control dampling 사용한다면 잊지말자.
+    // Update controls
     controls.update()
+
     // Render
     renderer.render(scene, camera)
 
