@@ -1,14 +1,25 @@
 import './style.css'
 import * as THREE from 'three'
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
+
+/**
+ * Debug
+ */
+const gui = new dat.GUI()
+
+const parameters = {
+    materialColor: '#ffeded'
+}
+
+gui
+    .addColor(parameters, 'materialColor')
+    .onChange(() => {
+        material.color.set(parameters.materialColor)
+    })
 
 /**
  * Base
  */
-// Debug
-const gui = new dat.GUI()
-
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -16,41 +27,55 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 /**
- * Objects
+ * Test cube
  */
-const object1 = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 16, 16),
-    new THREE.MeshBasicMaterial({color: '#ff0000'})
+// const cube = new THREE.Mesh(
+//     new THREE.BoxGeometry(1, 1, 1),
+//     new THREE.MeshBasicMaterial({ color: '#ff0000' })
+// )
+// scene.add(cube)
+const textureLoader = new THREE.TextureLoader()
+const gradientTexture = textureLoader.load("textures/gradients/3.jpg")
+gradientTexture.magFilter = THREE.NearestFilter
+
+const material = new THREE.MeshToonMaterial({
+    color: parameters.materialColor,
+    gradientMap: gradientTexture
+})
+
+const objectsDistance = 4
+
+const mesh1 = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.4, 16, 60),
+    material
 )
-object1.position.x = -2
-
-const object2 = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 16, 16),
-    new THREE.MeshBasicMaterial({color: '#ff0000'})
+const mesh2 = new THREE.Mesh(
+    new THREE.ConeGeometry(1, 2, 32),
+    material
 )
-
-const object3 = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 16, 16),
-    new THREE.MeshBasicMaterial({color: '#ff0000'})
+const mesh3 = new THREE.Mesh(
+    new THREE.TorusKnotGeometry(0.8, 0.35, 100, 16),
+    material
 )
-object3.position.x = 2
+mesh1.position.y = -objectsDistance * 0
+mesh2.position.y = -objectsDistance * 1
+mesh3.position.y = -objectsDistance * 2
 
-scene.add(object1, object2, object3)
+mesh1.position.x = 2
+mesh2.position.x = -2
+mesh3.position.x = 2
 
-/*
-* Raycaster
-* */
-const raycaster = new THREE.Raycaster()
-// const rayOrigin = new THREE.Vector3(-3,0,0)
-// const rayDirection = new THREE.Vector3(10,0,0)
-// rayDirection.normalize()
-//
-// raycaster.set(rayOrigin, rayDirection)
-//
-// const intersect = raycaster.intersectObject(object2)
-// console.error("--intersect : ", intersect)
-// const intersects = raycaster.intersectObjects([object1, object2, object3])
-// console.error("intersects : ", intersects)
+scene.add(mesh1, mesh2, mesh3)
+
+const sectionMeshes = [mesh1, mesh2, mesh3]
+/**
+ * Lights
+ */
+const directionalLight = new THREE.DirectionalLight("#ffffff", 1)
+directionalLight.position.set(1, 1, 0)
+scene.add(directionalLight)
+
+
 /**
  * Sizes
  */
@@ -73,94 +98,67 @@ window.addEventListener('resize', () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
-const mouse = new THREE.Vector2()
-
-window.addEventListener('mousemove', (e) => {
-    mouse.x = e.clientX / sizes.width * 2 - 1
-    mouse.y = -(e.clientY / sizes.height * 2 - 1)
-
-    //console.error("mouse : ", mouse)
-})
-
-window.addEventListener('click', (e) => {
-    if (currentIntersect) {
-        if (currentIntersect.object === object1) {
-            console.error("click on object1")
-        } else if (currentIntersect.object === object2) {
-            console.error("click on object2")
-        } else if (currentIntersect.object === object3) {
-            console.error("click on object3")
-        }
-    }
-})
-
 /**
- * Camera
+ * Camera - Group
+ */
+const cameraGroup = new THREE.Group()
+scene.add(cameraGroup)
+/**
+ * Base Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.z = 3
-scene.add(camera)
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-
+const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
+camera.position.z = 6
+//scene.add(camera)
+cameraGroup.add(camera)
 /**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
+    canvas: canvas,
+    alpha: true
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 /**
+ * Scroll
+ */
+let scrollY = window.scrollY
+
+window.addEventListener('scroll', () => {
+    scrollY = window.scrollY
+    //console.error("scrollY :", scrollY)
+})
+
+const cursor = {}
+cursor.x = 0
+cursor.y = 0
+
+window.addEventListener('mousemove', (e) => {
+    cursor.x = e.clientX / sizes.width - 0.5
+    cursor.y = e.clientY / sizes.height- 0.5
+})
+/**
  * Animate
  */
 const clock = new THREE.Clock()
-let currentIntersect = null
 
 const tick = () => {
     const elapsedTime = clock.getElapsedTime()
 
-    object1.position.y = Math.sin(elapsedTime * 0.3) * 1.5
-    object2.position.y = Math.sin(elapsedTime * 0.8) * 1.5
-    object3.position.y = Math.sin(elapsedTime * 1.4) * 1.5
+    //Animate camera
+    camera.position.y = -scrollY / sizes.height * objectsDistance
 
-    // const rayOrigin = new THREE.Vector3(-3, 0, 0)
-    // const rayDirection = new THREE.Vector3(1, 0, 0)
-    // rayDirection.normalize()
-    //
-    // raycaster.set(rayOrigin, rayDirection)
-    //
-
-    raycaster.setFromCamera(mouse, camera)
-    const objectsToTest = [object1, object2, object3]
-    const intersects = raycaster.intersectObjects(objectsToTest)
-    //console.error("--intersects : ", intersects[0])
-
-    for (const object of objectsToTest) {
-        object.material.color.set("#ff0000")
+    const parallaxX = cursor.x
+    const parallaxY = -cursor.y
+    cameraGroup.position.x = parallaxX
+    cameraGroup.position.y = parallaxY
+    //Animate Meshes
+    for(const mesh of sectionMeshes) {
+        mesh.rotation.x = elapsedTime * 0.1
+        mesh.rotation.y = elapsedTime * 0.12
     }
-    for (const intersect of intersects) {
-        intersect.object.material.color.set("#0000ff")
-    }
-
-    if (intersects.length) {
-        if (currentIntersect == null) {
-            //console.error("mouse enter")
-        }
-        currentIntersect = intersects[0]
-    } else {
-        if (currentIntersect) {
-            //console.error("mouse leave")
-        }
-        currentIntersect = null
-    }
-
-    // Update controls
-    controls.update()
 
     // Render
     renderer.render(scene, camera)
