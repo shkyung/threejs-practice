@@ -1,6 +1,6 @@
 import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
 
 /**
@@ -16,54 +16,41 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 /**
- * Textures
+ * Objects
  */
-const textureLoader = new THREE.TextureLoader()
-const particleTexture = textureLoader.load("/textures/particles/2.png")
+const object1 = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 16, 16),
+    new THREE.MeshBasicMaterial({color: '#ff0000'})
+)
+object1.position.x = -2
 
-// const particlesGeometry = new THREE.SphereGeometry(1,32,32)
-// const particlesMaterial = new THREE.PointsMaterial()
-// particlesMaterial.size = 0.02
-// particlesMaterial.sizeAttenuation = true
+const object2 = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 16, 16),
+    new THREE.MeshBasicMaterial({color: '#ff0000'})
+)
+
+const object3 = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 16, 16),
+    new THREE.MeshBasicMaterial({color: '#ff0000'})
+)
+object3.position.x = 2
+
+scene.add(object1, object2, object3)
+
+/*
+* Raycaster
+* */
+const raycaster = new THREE.Raycaster()
+// const rayOrigin = new THREE.Vector3(-3,0,0)
+// const rayDirection = new THREE.Vector3(10,0,0)
+// rayDirection.normalize()
 //
-// const particles = new THREE.Points(particlesGeometry, particlesMaterial)
-// scene.add(particles)
-
-const particlesGeometry = new THREE.BufferGeometry()
-const count = 20000
-
-const positions = new Float32Array(count * 3)
-const colors = new Float32Array(count *3)
-
-for(let i =0; i < positions.length; i++) {
-    positions[i] = (Math.random() - 0.5) * 10
-    colors[i] = Math.random()
-}
-
-particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions,3))
-particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors,3))
-
-const particlesMaterial = new THREE.PointsMaterial()
-particlesMaterial.size = 0.1
-particlesMaterial.sizeAttenuation = true
-//particlesMaterial.color = new THREE.Color("#ff88cc")
-particlesMaterial.transparent =true
-particlesMaterial.alphaMap = particleTexture
-//particlesMaterial.alphaTest = 0.001
-//particlesMaterial.depthTest = false
-particlesMaterial.depthWrite = false
-particlesMaterial.blending = THREE.AdditiveBlending
-particlesMaterial.vertexColors = true
-
-const particles = new THREE.Points(particlesGeometry, particlesMaterial)
-scene.add(particles)
-
-// const cube = new THREE.Mesh(
-//     new THREE.BoxBufferGeometry(),
-//     new THREE.MeshBasicMaterial()
-// )
-// scene.add(cube)
-
+// raycaster.set(rayOrigin, rayDirection)
+//
+// const intersect = raycaster.intersectObject(object2)
+// console.error("--intersect : ", intersect)
+// const intersects = raycaster.intersectObjects([object1, object2, object3])
+// console.error("intersects : ", intersects)
 /**
  * Sizes
  */
@@ -72,8 +59,7 @@ const sizes = {
     height: window.innerHeight
 }
 
-window.addEventListener('resize', () =>
-{
+window.addEventListener('resize', () => {
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
@@ -85,6 +71,27 @@ window.addEventListener('resize', () =>
     // Update renderer
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+})
+
+const mouse = new THREE.Vector2()
+
+window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX / sizes.width * 2 - 1
+    mouse.y = -(e.clientY / sizes.height * 2 - 1)
+
+    //console.error("mouse : ", mouse)
+})
+
+window.addEventListener('click', (e) => {
+    if (currentIntersect) {
+        if (currentIntersect.object === object1) {
+            console.error("click on object1")
+        } else if (currentIntersect.object === object2) {
+            console.error("click on object2")
+        } else if (currentIntersect.object === object3) {
+            console.error("click on object3")
+        }
+    }
 })
 
 /**
@@ -112,23 +119,45 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Animate
  */
 const clock = new THREE.Clock()
+let currentIntersect = null
 
-const tick = () =>
-{
+const tick = () => {
     const elapsedTime = clock.getElapsedTime()
 
-    // Update particles
-    //particles.rotation.y = elapsedTime * 0.2
+    object1.position.y = Math.sin(elapsedTime * 0.3) * 1.5
+    object2.position.y = Math.sin(elapsedTime * 0.8) * 1.5
+    object3.position.y = Math.sin(elapsedTime * 1.4) * 1.5
 
-    for(let i=-0; i < count; i++) {
-        const i3 = i * 3
-        //x
-        const x = particlesGeometry.attributes.position.array[i3]
-        //y
-        particlesGeometry.attributes.position.array[i3 + 1] = Math.sin(elapsedTime + x)
+    // const rayOrigin = new THREE.Vector3(-3, 0, 0)
+    // const rayDirection = new THREE.Vector3(1, 0, 0)
+    // rayDirection.normalize()
+    //
+    // raycaster.set(rayOrigin, rayDirection)
+    //
+
+    raycaster.setFromCamera(mouse, camera)
+    const objectsToTest = [object1, object2, object3]
+    const intersects = raycaster.intersectObjects(objectsToTest)
+    //console.error("--intersects : ", intersects[0])
+
+    for (const object of objectsToTest) {
+        object.material.color.set("#ff0000")
+    }
+    for (const intersect of intersects) {
+        intersect.object.material.color.set("#0000ff")
     }
 
-    particlesGeometry.attributes.position.needsUpdate = true
+    if (intersects.length) {
+        if (currentIntersect == null) {
+            //console.error("mouse enter")
+        }
+        currentIntersect = intersects[0]
+    } else {
+        if (currentIntersect) {
+            //console.error("mouse leave")
+        }
+        currentIntersect = null
+    }
 
     // Update controls
     controls.update()
